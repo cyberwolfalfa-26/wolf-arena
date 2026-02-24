@@ -3,209 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PLAY CYBER WOLF | Official</title>
+    <title>CYBER WOLF | ALPHA SYSTEM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
-        .neon-text { color: #00f3ff; text-shadow: 0 0 15px #00f3ff; }
-        .glass-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); }
-        #arena-ui { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; }
-        .tab-content { display: none; height: calc(100vh - 180px); overflow-y: auto; }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; }
+        .neon-txt { color: #00f3ff; text-shadow: 0 0 15px rgba(0,243,255,0.7); }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .tab-btn { opacity: 0.3; transition: 0.3s; }
-        .tab-btn.active { opacity: 1; color: #00f3ff; transform: scale(1.1); }
-        .scanner { position: absolute; width: 100%; height: 2px; background: #00f3ff; opacity: 0.2; top: 0; animation: scan 3s linear infinite; pointer-events: none; }
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        #arena-container { display: none; position: fixed; inset: 0; z-index: 1000; }
+        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="no-scrollbar">
+<body>
 
-    <div id="arena-ui">
-        <div class="fixed top-0 left-0 right-0 p-5 flex justify-between items-center z-[2100] bg-gradient-to-b from-black to-transparent font-black">
-            <div class="flex gap-6 text-[10px]">
-                <div><p class="text-gray-500 uppercase font-black tracking-tighter italic">Bounty</p><p id="arena-reward" class="neon-text text-xl">0</p></div>
-                <div><p class="text-gray-500 uppercase font-black tracking-tighter italic">Armor</p><p id="wolf-hp" class="text-red-500 text-xl">III</p></div>
-            </div>
-            <button onclick="exitArena()" class="bg-red-600/20 px-4 py-2 rounded-lg text-red-500 border border-red-500/30 text-[10px] uppercase font-bold italic">Abort</button>
-        </div>
-        <div id="phaser-game"></div>
-    </div>
-
-    <div id="main-dashboard" class="flex flex-col h-screen">
-        <div class="p-6 flex justify-between items-center bg-black/50 border-b border-white/5">
+    <div id="main-ui" class="h-screen flex flex-col p-6">
+        <header class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-2xl font-black neon-text italic uppercase">CYBER WOLF</h1>
+                <h1 class="text-xl font-black italic neon-txt uppercase">Cyber Wolf</h1>
                 <p class="text-[7px] text-gray-500 font-mono italic">CA: 5vwpEWK...pump</p>
             </div>
             <div class="text-right">
-                <p id="wolf-balance" class="text-2xl font-black tracking-tighter italic">0</p>
-                <p class="text-[8px] text-cyan-500 uppercase font-black tracking-widest italic">$WOLF</p>
+                <p id="ui-bal" class="text-lg font-black tracking-tighter">0 $WOLF</p>
+                <p class="text-[8px] text-cyan-500 uppercase font-bold tracking-widest italic">Live Balance</p>
             </div>
+        </header>
+
+        <div id="tab-arena" class="tab-content active flex-1 flex flex-col">
+            <div class="glass rounded-[40px] p-10 mb-8 text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-cyan-500/5 animate-pulse"></div>
+                <img src="assets/wolf.png" class="w-40 mx-auto relative z-10 drop-shadow-[0_0_20px_rgba(0,243,255,0.4)]">
+            </div>
+            <button onclick="confirmWallet()" id="wallet-btn" class="w-full py-5 bg-white text-black font-black rounded-2xl mb-4 text-xs uppercase italic">Link Neural Wallet</button>
+            <button onclick="startHunt()" id="start-btn" class="w-full py-7 bg-gray-900 text-gray-700 font-black rounded-[35px] opacity-50 mb-4 italic" disabled>START HUNT</button>
         </div>
 
-        <div class="flex-1 overflow-hidden">
-            <div id="tab-arena" class="tab-content active p-6 text-center">
-                <div class="relative py-12 flex justify-center overflow-hidden rounded-[40px] glass-panel">
-                    <div class="scanner"></div>
-                    <img id="dashboard-wolf" src="assets/wolf.png" class="w-48 h-48 object-contain z-10 animate-pulse">
-                </div>
-                <div class="mt-8 space-y-4">
-                    <button id="wallet-btn" onclick="connectWallet()" class="w-full py-4 rounded-2xl font-black text-[10px] uppercase bg-white text-black shadow-lg italic">Link Neural Wallet</button>
-                    <button id="start-btn" onclick="enterArena()" class="w-full py-6 rounded-[35px] font-black text-sm uppercase tracking-[0.4em] bg-gray-900 text-gray-700 italic" disabled>Initialize Hunt</button>
+        <div id="tab-rank" class="tab-content flex-1">
+            <h2 class="text-lg font-black italic mb-4 uppercase text-yellow-500">Season Ranking</h2>
+            <div class="glass rounded-3xl p-6 mb-4 border-l-4 border-yellow-500">
+                <p class="text-[10px] text-gray-400 mb-4 font-bold uppercase italic">Prize: 1,700,000 $WOLF</p>
+                <div class="space-y-3 text-xs italic">
+                    <div class="flex justify-between border-b border-white/5 pb-1"><span>1. Ghost_Alpha</span><span class="font-black text-cyan-400">1.0M</span></div>
+                    <div class="flex justify-between border-b border-white/5 pb-1"><span>2. Shadow_Hunt</span><span class="font-black">500k</span></div>
                 </div>
             </div>
-
-            <div id="tab-rank" class="tab-content p-6">
-                <div class="glass-panel p-6 rounded-[35px] text-center border border-cyan-500/30">
-                    <p class="text-[10px] font-black uppercase text-cyan-400 mb-2 italic tracking-widest">Tournament Pool</p>
-                    <p class="text-[9px] text-gray-400 mb-6 font-medium leading-relaxed italic uppercase">Entry Fee: 1,000 $WOLF<br>Prize: 1,700,000 $WOLF</p>
-                    <button onclick="joinRanking()" class="w-full py-4 bg-cyan-500 text-black rounded-2xl font-black text-xs uppercase shadow-[0_0_20px_rgba(0,243,255,0.4)] italic">Enter Season</button>
-                </div>
-            </div>
+            <button onclick="payTournament()" class="w-full py-4 bg-yellow-600 text-black font-black rounded-2xl text-[10px] uppercase italic shadow-lg">Join Tournament (1000 $WOLF)</button>
         </div>
 
-        <div class="h-24 bg-black border-t border-white/5 flex justify-around items-center px-4 pb-4">
-            <button onclick="showTab('arena')" class="tab-btn active flex flex-col items-center"><span class="text-2xl">🛡️</span><span class="text-[8px] font-black uppercase mt-1 italic tracking-widest">Combat</span></button>
-            <button onclick="showTab('rank')" class="tab-btn flex flex-col items-center"><span class="text-2xl">🏆</span><span class="text-[8px] font-black uppercase mt-1 italic tracking-widest">Rank</span></button>
+        <nav class="flex justify-around bg-black border-t border-white/10 p-5 mt-auto">
+            <button onclick="showTab('arena')" class="text-2xl hover:scale-125 transition">🛡️</button>
+            <button onclick="showTab('rank')" class="text-2xl hover:scale-125 transition">🏆</button>
+        </nav>
+    </div>
+
+    <div id="arena-container">
+        <div class="fixed top-6 left-6 z-[1100] font-black italic">
+            <p id="game-score" class="text-cyan-400 text-2xl tracking-tighter">0</p>
         </div>
+        <button onclick="stopHunt()" class="fixed top-6 right-6 z-[1100] bg-red-600/20 text-red-500 px-5 py-2 rounded-xl font-black text-[10px] border border-red-500/30">ABORT</button>
+        <div id="phaser-game"></div>
     </div>
 
     <script>
         const FEE_WALLET = "uGsGtmi55hfVYY8zPYzFDqnWvaTUU9YZ3n1s9gmM9h5";
-        let balance = parseInt(localStorage.getItem('wolfBalance')) || 0;
-        let inRanking = localStorage.getItem('inRanking') === 'true';
-        let currentTint = 0x00f3ff;
-        let gameInstance = null; let sessionReward = 0;
+        let balance = parseInt(localStorage.getItem('w_bal')) || 0;
+        let game = null;
 
-        function updateUI() {
-            document.getElementById('wolf-balance').innerText = balance.toLocaleString();
-            localStorage.setItem('wolfBalance', balance);
-        }
-
-        function connectWallet() {
+        function confirmWallet() {
             if(window.navigator.vibrate) window.navigator.vibrate(100);
-            document.getElementById('wallet-btn').innerText = "SOL_WOLF_ALPHA_SYNC";
-            document.getElementById('wallet-btn').className = "w-full py-4 mb-4 rounded-2xl font-black text-[10px] bg-green-500 text-black italic";
-            let btn = document.getElementById('start-btn');
-            btn.disabled = false;
-            btn.className = "w-full py-6 rounded-[35px] font-black text-sm bg-cyan-500 text-black shadow-[0_0_30px_#00f3ff] italic";
-            btn.innerText = "START HUNT";
+            document.getElementById('wallet-btn').innerText = "SOL_WOLF_ALPHA_SYNCED";
+            document.getElementById('wallet-btn').className = "w-full py-5 bg-green-500 text-black font-black rounded-2xl mb-4 text-xs uppercase italic";
+            let sBtn = document.getElementById('start-btn');
+            sBtn.disabled = false;
+            sBtn.className = "w-full py-7 bg-cyan-500 text-black font-black rounded-[35px] mb-4 italic shadow-[0_0_30px_rgba(0,243,255,0.5)]";
+            sBtn.innerText = "INITIALIZE HUNT";
         }
 
-        function joinRanking() {
-            if(balance >= 1000) {
-                balance -= 1000;
-                localStorage.setItem('inRanking', 'true');
-                updateUI();
-                alert("Season Active! 2% Fee to Alpha Wallet: " + FEE_WALLET.slice(0,6));
-            } else { alert("Minimum 1,000 $WOLF required."); }
+        function showTab(t) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + t).classList.add('active');
         }
 
-        function showTab(name) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + name).classList.add('active');
-            event.currentTarget.classList.add('active');
+        function startHunt() {
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('arena-container').style.display = 'block';
+            initArena();
         }
 
-        function enterArena() {
-            document.getElementById('main-dashboard').style.display = 'none';
-            document.getElementById('arena-ui').style.display = 'block';
-            initGame();
-        }
-
-        function exitArena() {
-            if(gameInstance) { gameInstance.destroy(true); gameInstance = null; }
-            balance += sessionReward;
+        function stopHunt() {
+            if(game) { game.destroy(true); game = null; }
+            document.getElementById('main-ui').style.display = 'flex';
+            document.getElementById('arena-container').style.display = 'none';
             updateUI();
-            document.getElementById('main-dashboard').style.display = 'flex';
-            document.getElementById('arena-ui').style.display = 'none';
         }
 
-        function initGame() {
-            sessionReward = 0; let wolfHP = 3; let lastFired = 0; let fury = 0;
-            gameInstance = new Phaser.Game({
-                type: Phaser.AUTO, parent: 'phaser-game', width: window.innerWidth, height: window.innerHeight,
+        function updateUI() { document.getElementById('ui-bal').innerText = balance.toLocaleString() + " $WOLF"; }
+
+        function initArena() {
+            const config = {
+                type: Phaser.AUTO, parent: 'phaser-game', 
+                width: window.innerWidth, height: window.innerHeight,
                 physics: { default: 'arcade' },
-                scene: {
-                    preload: function() {
-                        this.load.image('wolf', 'assets/wolf.png');
-                        this.load.image('tree', 'assets/tree.png');
-                        this.load.image('rock', 'assets/rock.png');
-                        this.load.image('coin', 'assets/coin.png');
-                        // Corrigindo para os nomes que tens nos assets
-                        this.load.image('rat', 'assets/rat.png');
-                        this.load.image('drone', 'assets/drone.png');
-                        let g = this.make.graphics({add: false});
-                        g.fillStyle(0xffffff).fillCircle(4,4,4).generateTexture('bu', 8, 8);
-                        g.clear().fillStyle(0x00f3ff, 0.5).fillRect(0,0,10,1000).generateTexture('beam', 10, 1000);
-                    },
-                    create: function() {
-                        this.input.addPointer(2);
-                        this.physics.world.setBounds(0, 0, 4000, 4000);
-                        this.add.grid(2000, 2000, 4000, 4000, 100, 100, 0, 0, currentTint, 0.05);
-                        this.terrain = this.physics.add.staticGroup();
-                        for(let i=0; i<35; i++) this.terrain.create(Phaser.Math.Between(0,4000), Phaser.Math.Between(0,4000), (Math.random()>0.5?'tree':'rock')).setScale(0.8).refreshBody();
-                        
-                        this.player = this.physics.add.sprite(2000, 2000, 'wolf').setScale(0.5).setTint(currentTint);
-                        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-                        this.enemies = this.physics.add.group();
-                        this.bullets = this.physics.add.group();
-                        this.coins = this.physics.add.group();
-                        this.beam = this.physics.add.sprite(0,0,'beam').setOrigin(0.5, 1).setVisible(false).setTint(currentTint);
+                scene: { preload: preload, create: create, update: update }
+            };
+            game = new Phaser.Game(config);
+        }
 
-                        this.time.addEvent({ delay: 1000, callback: () => {
-                            let type = Math.random() > 0.8 ? 'drone' : 'rat';
-                            let e = this.enemies.create(this.player.x + Phaser.Math.Between(-800, 800), this.player.y + Phaser.Math.Between(-800, 800), type).setScale(0.4);
-                            e.eType = type;
-                        }, loop: true });
+        function preload() {
+            this.load.image('wolf', 'assets/wolf.png');
+            this.load.image('rat', 'assets/rat.png');
+            this.load.image('tree', 'assets/tree.png');
+            this.load.image('rock', 'assets/rock.png');
+            let g = this.make.graphics({add: false});
+            g.fillStyle(0x00f3ff).fillCircle(4,4,4).generateTexture('bu', 8, 8);
+        }
 
-                        this.time.addEvent({ delay: 20000, callback: () => {
-                            let c = this.coins.create(this.player.x + Phaser.Math.Between(-300, 300), this.player.y + Phaser.Math.Between(-300, 300), 'coin').setScale(0.7);
-                            c.hits = 0;
-                        }, loop: true });
+        function create() {
+            this.physics.world.setBounds(0, 0, 3000, 3000);
+            this.add.grid(1500, 1500, 3000, 3000, 100, 100, 0, 0, 0x00f3ff, 0.05);
+            
+            // TERRENO
+            this.terrain = this.physics.add.staticGroup();
+            for(let i=0; i<30; i++) this.terrain.create(Phaser.Math.Between(0,3000), Phaser.Math.Between(0,3000), (Math.random()>0.5?'tree':'rock')).setScale(0.8).refreshBody();
 
-                        this.physics.add.collider(this.player, this.terrain);
-                        this.physics.add.overlap(this.bullets, this.enemies, (b, e) => { b.destroy(); e.destroy(); sessionReward += 10; fury = Math.min(100, fury+2); document.getElementById('arena-reward').innerText = sessionReward; });
-                        this.physics.add.overlap(this.bullets, this.coins, (b, c) => {
-                            b.destroy(); c.hits++;
-                            if(c.hits >= 10) { c.destroy(); sessionReward += 50; if(window.navigator.vibrate) window.navigator.vibrate(50); this.cameras.main.shake(100, 0.01); document.getElementById('arena-reward').innerText = sessionReward; }
-                        });
-                        this.physics.add.overlap(this.player, this.enemies, () => { if(window.navigator.vibrate) window.navigator.vibrate(200); exitArena(); });
-                    },
-                    update: function(time) {
-                        if(!this.player) return;
-                        let m = null, s = null;
-                        if(this.input.pointer1.isDown) { if(this.input.pointer1.x < window.innerWidth/2) m = this.input.pointer1; else s = this.input.pointer1; }
-                        if(this.input.pointer2.isDown) { if(this.input.pointer2.x < window.innerWidth/2) m = this.input.pointer2; else s = this.input.pointer2; }
-                        
-                        if(m) this.physics.velocityFromRotation(Phaser.Math.Angle.Between(window.innerWidth/4, window.innerHeight/2, m.x, m.y), 320, this.player.body.velocity); 
-                        else this.player.setVelocity(0);
+            // LOBO DINÂMICO (PEQUENO E ÁGIL)
+            this.player = this.physics.add.sprite(1500, 1500, 'wolf').setScale(0.12).setTint(0x00f3ff);
+            this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-                        if(s) {
-                            let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, s.worldX, s.worldY);
-                            if(fury >= 100) {
-                                this.beam.setPosition(this.player.x, this.player.y).setRotation(angle + Math.PI/2).setVisible(true);
-                                this.enemies.getChildren().forEach(e => { if(Phaser.Geom.Intersects.RectangleToRectangle(this.beam.getBounds(), e.getBounds())) e.destroy(); });
-                                fury -= 0.6;
-                            } else if(time > lastFired) {
-                                this.beam.setVisible(false);
-                                let b = this.bullets.create(this.player.x, this.player.y, 'bu').setTint(currentTint);
-                                this.physics.velocityFromRotation(angle, 1100, b.body.velocity);
-                                lastFired = time + 200;
-                            }
-                        } else { this.beam.setVisible(false); }
+            this.enemies = this.physics.add.group();
+            this.time.addEvent({ delay: 1000, callback: () => {
+                let e = this.enemies.create(this.player.x + Phaser.Math.Between(-600, 600), this.player.y + Phaser.Math.Between(-600, 600), 'rat').setScale(0.12);
+                this.physics.moveToObject(e, this.player, 250);
+            }, loop: true });
 
-                        this.enemies.getChildren().forEach(e => {
-                            if(e.eType === 'drone') {
-                                let dist = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
-                                if(dist > 250) this.physics.moveToObject(e, this.player, 200); else e.setVelocity(0);
-                            } else this.physics.moveToObject(e, this.player, 250);
-                        });
-                    }
-                }
-            });
+            this.physics.add.collider(this.player, this.terrain);
+            this.physics.add.overlap(this.player, this.enemies, () => { if(window.navigator.vibrate) window.navigator.vibrate(200); stopHunt(); });
+        }
+
+        function update() {
+            if (this.input.activePointer.isDown) {
+                this.physics.moveToObject(this.player, this.input.activePointer, 320);
+                
+                // --- LÓGICA DE MOVIMENTO ALPHA ---
+                // Virar o lobo (Flip) dependendo da direção
+                if(this.input.activePointer.worldX < this.player.x) this.player.setFlipX(true);
+                else this.player.setFlipX(false);
+                
+                // Inclinação ao correr (Leaning)
+                this.player.rotation = Math.sin(this.time.now * 0.01) * 0.1;
+                
+            } else {
+                this.player.setVelocity(0);
+                this.player.rotation = 0;
+            }
         }
         updateUI();
     </script>
