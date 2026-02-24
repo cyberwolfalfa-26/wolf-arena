@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WOLF ARENA | Web3 Survival</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+        .neon-text { color: #00f3ff; text-shadow: 0 0 12px #00f3ff; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); }
+        #arena-ui { display: none; position: fixed; inset: 0; background: #000; z-index: 500; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn { opacity: 0.4; transition: 0.3s; border-top: 2px solid transparent; }
+        .tab-btn.active { opacity: 1; border-top-color: #00f3ff; color: #00f3ff; }
+        .hero-box { position: relative; width: 100%; height: 380px; background: radial-gradient(circle, #0a1a20 0%, #000 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #dashboard-wolf { width: 220px; height: 220px; object-fit: contain; z-index: 10; transition: 0.5s; }
+        .reward-card { min-width: 130px; padding: 20px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); transition: 0.4s; }
+        .locked { opacity: 0.2; filter: grayscale(1); }
+    </style>
+</head>
+<body class="no-scrollbar">
+
+    <div id="arena-ui">
+        <div class="fixed top-0 left-0 right-0 p-5 flex justify-between items-center z-[600] bg-gradient-to-b from-black to-transparent font-black text-[10px]">
+            <div class="flex gap-6">
+                <div><p class="text-gray-500 uppercase tracking-tighter">Bounty</p><p id="arena-reward" class="neon-text text-xl">0</p></div>
+                <div><p class="text-gray-500 uppercase tracking-tighter">Shields</p><p id="wolf-hp" class="text-red-500 text-xl">III</p></div>
+            </div>
+            <p id="arena-name" class="text-cyan-400 font-black uppercase tracking-widest italic">Cyber Forest</p>
+            <button onclick="exitArena()" class="bg-red-600/20 px-4 py-2 rounded-lg text-red-500 border border-red-500/30 uppercase font-black">Extract</button>
+        </div>
+        <div id="phaser-game"></div>
+    </div>
+
+    <div id="main-dashboard" class="flex flex-col h-screen">
+        <div class="p-6 flex justify-between items-center">
+            <h1 class="text-2xl font-black neon-text italic">WOLF ARENA</h1>
+            <div class="text-right">
+                <p id="wolf-balance" class="text-xl font-black">0 $WOLF</p>
+                <p class="text-[8px] text-gray-500 uppercase tracking-widest">In-Game Wallet</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto no-scrollbar">
+            <div id="tab-arena" class="tab-content active">
+                <div class="hero-box">
+                    <img id="dashboard-wolf" src="assets/wolf.png">
+                    <div class="mt-4 text-center">
+                        <span class="bg-cyan-500/20 text-cyan-400 text-[10px] px-3 py-1 rounded-full uppercase font-black border border-cyan-500/30 tracking-widest">Level <span id="lvl-num">1</span></span>
+                    </div>
+                </div>
+                <div class="p-6 space-y-6">
+                    <button id="wallet-btn" onclick="connectWallet()" class="w-full py-4 rounded-2xl font-black text-xs uppercase bg-white text-black shadow-lg">Connect Wallet</button>
+                    <button id="start-btn" onclick="enterArena()" class="w-full py-6 rounded-3xl font-black text-sm uppercase tracking-[0.4em] bg-gray-900 text-gray-600 opacity-50 cursor-not-allowed" disabled>LOCKED BY WALLET</button>
+                    
+                    <section>
+                        <h2 class="text-[10px] font-black uppercase text-gray-500 mb-4 italic tracking-widest">Roadmap</h2>
+                        <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                            <div id="r-5" class="reward-card locked"><p class="text-[9px] mb-2 font-black">LVL 5</p><div class="text-2xl">🛡️</div><p class="text-[9px] mt-2 font-black">Armor</p></div>
+                            <div id="r-10" class="reward-card locked"><p class="text-[9px] mb-2 font-black">LVL 10</p><div class="text-2xl">💰</div><p class="text-[9px] mt-2 font-black">1k $W</p></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div id="tab-shop" class="tab-content p-6">
+                <h2 class="text-xl font-black uppercase mb-6 italic">Wolf Shop</h2>
+                <div class="space-y-4">
+                    <div class="glass-panel p-4 rounded-2xl flex justify-between items-center">
+                        <div><p class="font-black text-sm">Plasma Blade</p><p class="text-[10px] text-gray-500">+20% Damage</p></div>
+                        <button onclick="buyItem(5000)" class="bg-cyan-500 text-black px-4 py-2 rounded-xl text-[10px] font-black italic">5k $W</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-alpha" class="tab-content p-6 text-center">
+                <h2 class="text-xl font-black uppercase mb-8 italic">Wolf Selection</h2>
+                <div class="grid grid-cols-3 gap-4">
+                    <div onclick="setTint(0x00f3ff)" class="glass-panel p-4 rounded-2xl border-2 border-cyan-500 text-cyan-500 font-black text-[10px]">CYBER</div>
+                    <div onclick="setTint(0xff3300)" class="glass-panel p-4 rounded-2xl text-red-500 font-black text-[10px]">MAGMA</div>
+                    <div onclick="setTint(0x39ff14)" class="glass-panel p-4 rounded-2xl text-green-500 font-black text-[10px]">TOXIC</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-20 border-t border-white/10 bg-black flex justify-around items-center">
+            <button onclick="showTab('arena')" class="tab-btn active flex flex-col items-center"><span class="text-xl">🐺</span><span class="text-[9px] font-black uppercase">Arena</span></button>
+            <button onclick="showTab('shop')" class="tab-btn flex flex-col items-center"><span class="text-xl">🛒</span><span class="text-[9px] font-black uppercase">Shop</span></button>
+            <button onclick="showTab('alpha')" class="tab-btn flex flex-col items-center"><span class="text-xl">🎨</span><span class="text-[9px] font-black uppercase">Alpha</span></button>
+        </div>
+    </div>
+
+    <script>
+        // Data Persistence
+        let balance = parseInt(localStorage.getItem('wolfBalance')) || 0;
+        let playerLevel = Math.floor(balance / 2000) + 1;
+        let walletAddress = null;
+        let currentTint = 0x00f3ff;
+        let gameInstance = null; let wolfHP = 3; let lastFired = 0;
+
+        function updateDashboard() {
+            document.getElementById('wolf-balance').innerText = balance.toLocaleString() + " $WOLF";
+            document.getElementById('lvl-num').innerText = playerLevel;
+            localStorage.setItem('wolfBalance', balance);
+            if(playerLevel >= 5) document.getElementById('r-5').classList.remove('locked');
+            if(playerLevel >= 10) document.getElementById('r-10').classList.remove('locked');
+        }
+
+        function connectWallet() {
+            walletAddress = "0x" + Math.random().toString(16).slice(2, 10).toUpperCase() + "...ALPHA";
+            document.getElementById('wallet-btn').innerText = walletAddress;
+            document.getElementById('wallet-btn').classList.replace('bg-white', 'bg-green-500');
+            let start = document.getElementById('start-btn');
+            start.disabled = false;
+            start.classList.replace('bg-gray-900', 'bg-cyan-500');
+            start.classList.replace('text-gray-600', 'text-black');
+            start.innerText = "START HUNT";
+            alert("AWOOOO! Wallet Connected.");
+        }
+
+        function buyItem(price) {
+            if(balance >= price) { balance -= price; updateDashboard(); alert("Item Acquired!"); }
+            else { alert("Insufficient $WOLF!"); }
+        }
+
+        function showTab(name) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+        }
+
+        function setTint(t) { currentTint = t; alert("Color Synchronized!"); }
+
+        function enterArena() {
+            document.getElementById('main-dashboard').style.display = 'none';
+            document.getElementById('arena-ui').style.display = 'block';
+            sessionReward = 0; wolfHP = 3; initGame();
+        }
+
+        function exitArena() {
+            if(gameInstance) { gameInstance.destroy(true); gameInstance = null; }
+            balance += sessionReward;
+            playerLevel = Math.floor(balance / 2000) + 1;
+            updateDashboard();
+            document.getElementById('main-dashboard').style.display = 'flex';
+            document.getElementById('arena-ui').style.display = 'none';
+        }
+
+        function initGame() {
+            gameInstance = new Phaser.Game({
+                type: Phaser.AUTO, parent: 'phaser-game', width: window.innerWidth, height: window.innerHeight,
+                physics: { default: 'arcade' },
+                scene: {
+                    preload: function() {
+                        this.load.image('wolf', 'assets/wolf.png');
+                        this.load.image('tree', 'assets/tree.png');
+                        this.load.image('rock', 'assets/rock.png');
+                        this.load.image('coin', 'assets/coin.png');
+                        this.load.image('en_rat', 'assets/rat.png');
+                        let g = this.make.graphics({add: false});
+                        g.fillStyle(0xffffff).fillCircle(4,4,4).generateTexture('bu', 8, 8);
+                    },
+                    create: function() {
+                        this.input.addPointer(2);
+                        this.physics.world.setBounds(0, 0, 3000, 3000);
+                        this.add.grid(1500, 1500, 3000, 3000, 100, 100, 0, 0, currentTint, 0.05);
+                        
+                        this.terrain = this.physics.add.staticGroup();
+                        for(let i=0; i<30; i++) {
+                            this.terrain.create(Phaser.Math.Between(0,3000), Phaser.Math.Between(0,3000), (Math.random()>0.5?'tree':'rock')).setScale(0.6).refreshBody();
+                        }
+
+                        this.player = this.physics.add.sprite(1500, 1500, 'wolf').setScale(0.5).setTint(currentTint);
+                        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+                        this.enemies = this.physics.add.group();
+                        this.bullets = this.physics.add.group();
+
+                        this.time.addEvent({ delay: 1000, callback: () => {
+                            let e = this.enemies.create(this.player.x + Phaser.Math.Between(-800, 800), this.player.y + Phaser.Math.Between(-800, 800), 'en_rat').setScale(0.4);
+                            this.physics.moveToObject(e, this.player, 250);
+                        }, loop: true });
+
+                        this.physics.add.collider(this.player, this.terrain);
+                        this.physics.add.overlap(this.bullets, this.enemies, (b, e) => { b.destroy(); e.destroy(); sessionReward += 25; document.getElementById('arena-reward').innerText = sessionReward; });
+                        this.physics.add.overlap(this.player, this.enemies, (p, e) => { wolfHP--; document.getElementById('wolf-hp').innerText = "I".repeat(Math.max(0, wolfHP)); if(wolfHP<=0) exitArena(); e.destroy(); });
+                    },
+                    update: function(time) {
+                        if(!this.player) return;
+                        let m = null, s = null;
+                        if(this.input.pointer1.isDown) { if(this.input.pointer1.x < window.innerWidth/2) m = this.input.pointer1; else s = this.input.pointer1; }
+                        if(this.input.pointer2.isDown) { if(this.input.pointer2.x < window.innerWidth/2) m = this.input.pointer2; else s = this.input.pointer2; }
+                        if(m) { let a = Phaser.Math.Angle.Between(window.innerWidth/4, window.innerHeight/2, m.x, m.y); this.physics.velocityFromRotation(a, 320, this.player.body.velocity); this.player.setFlipX(m.x < window.innerWidth/4); }
+                        else this.player.setVelocity(0);
+                        if(s && time > lastFired) { let b = this.bullets.create(this.player.x, this.player.y, 'bu').setTint(currentTint); this.physics.velocityFromRotation(Phaser.Math.Angle.Between(this.player.x, this.player.y, s.worldX, s.worldY), 1000, b.body.velocity); lastFired = time + 200; }
+                    }
+                }
+            });
+        }
+        updateDashboard();
+    </script>
+</body>
+</html>
